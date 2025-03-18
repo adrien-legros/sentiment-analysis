@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  annotations:
+    openshift.io/description: ""
+    openshift.io/display-name: sentiment-analysis
+  labels:
+    kubernetes.io/metadata.name: sentiment-analysis
+    modelmesh-enabled: "false"
+    opendatahub.io/dashboard: "true"
+  name: sentiment-analysis
