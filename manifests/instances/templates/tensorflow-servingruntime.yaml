@@ -1,3 +1,4 @@
+{{ if eq .Values.prod.model.arch "lstm" }}
 apiVersion: serving.kserve.io/v1alpha1
 kind: ServingRuntime
 metadata:
@@ -37,3 +38,4 @@ spec:
         limits:
           cpu: "1"
           memory: 2Gi
+{{ end }}

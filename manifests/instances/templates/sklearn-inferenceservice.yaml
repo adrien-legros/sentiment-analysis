@@ -1,3 +1,4 @@
+{{ if eq .Values.prod.model.arch  "lr" }}
 apiVersion: "serving.kserve.io/v1beta1"
 kind: "InferenceService"
 metadata:
@@ -20,3 +21,4 @@ spec:
       storage:
         key: models
         path: sentiment-analysis/prod/sklearn/lr-pipeline.pkl
+{{ end }}

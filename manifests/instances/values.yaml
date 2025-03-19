@@ -1,0 +1,5 @@
+prod:
+  namespace: sentiment-analysis-prod
+  model:
+    arch: lr # lr or lstm
+    version: prod # version here
