@@ -3,9 +3,9 @@ kind: Namespace
 metadata:
   annotations:
     openshift.io/description: ""
-    openshift.io/display-name: sentiment-analysis
+    openshift.io/display-name: sentiment-analysis-prod
   labels:
-    kubernetes.io/metadata.name: sentiment-analysis
+    kubernetes.io/metadata.name: sentiment-analysis-prod
     modelmesh-enabled: "false"
     opendatahub.io/dashboard: "true"
-  name: sentiment-analysis
+  name: sentiment-analysis-prod

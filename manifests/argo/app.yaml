@@ -4,14 +4,14 @@ metadata:
   name: inference-prod
   namespace: openshift-gitops
 spec:
-  project: crazy-train-demo
+  project: inference-prod
   source:
     repoURL: https://github.com/adrien-legros/sentiment-analysis.git
     targetRevision: main
     path: manifests/instances
   destination:
     server: https://kubernetes.default.svc
-    namespace: inference-prod
+    namespace: sentiment-analysis-prod
   syncPolicy:
     syncOptions:
     - CreateNamespace=false
