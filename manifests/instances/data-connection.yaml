@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: models
-  namespace: sentiment-analysis
+  namespace: sentiment-analysis-prod
   labels:
     opendatahub.io/dashboard: "true"
     opendatahub.io/managed: "true"

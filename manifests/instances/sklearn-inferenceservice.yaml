@@ -2,7 +2,7 @@ apiVersion: "serving.kserve.io/v1beta1"
 kind: "InferenceService"
 metadata:
   name: "kserve-sklearnserver"
-  namespace: sentiment-analysis
+  namespace: sentiment-analysis-prod
   annotations:
     openshift.io/display-name: sentiment-analysis
     serving.knative.openshift.io/enablePassthrough: "true"

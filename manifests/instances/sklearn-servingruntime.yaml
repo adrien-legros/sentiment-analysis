@@ -2,7 +2,7 @@ apiVersion: serving.kserve.io/v1alpha1
 kind: ServingRuntime
 metadata:
   name: kserve-sklearnserver
-  namespace: sentiment-analysis
+  namespace: sentiment-analysis-prod
 spec:
   annotations:
     prometheus.kserve.io/port: '8080'

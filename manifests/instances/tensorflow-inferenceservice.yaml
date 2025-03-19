@@ -9,7 +9,7 @@ metadata:
   labels:
     opendatahub.io/dashboard: "true"
   name: lstm
-  namespace: sentiment-analysis
+  namespace: sentiment-analysis-prod
 spec:
   predictor:
     maxReplicas: 1
