@@ -2,7 +2,7 @@ apiVersion: "serving.kserve.io/v1beta1"
 kind: "InferenceService"
 metadata:
   name: "kserve-sklearnserver"
-  namespace: "sentiment-analysis"
+  namespace: sentiment-analysis
   annotations:
     openshift.io/display-name: sentiment-analysis
     serving.knative.openshift.io/enablePassthrough: "true"
@@ -18,5 +18,5 @@ spec:
         name: sklearn
       runtime: kserve-sklearnserver
       storage:
-        key: aws-connection-models
-        path: models/sentiment-analysis/prod/best-model.onnx
+        key: models
+        path: sentiment-analysis/prod/sklearn/lr-pipeline.pkl

@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: inference-prod
+  namespace: openshift-gitops
+spec:
+  project: crazy-train-demo
+  source:
+    repoURL: https://github.com/adrien-legros/sentiment-analysis.git
+    targetRevision: main
+    path: manifests/instances
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: inference-prod
+  syncPolicy:
+    syncOptions:
+    - CreateNamespace=false
+    automated:
+      selfHeal: true
+      prune: true
+    managedNamespaceMetadata:
+      labels:
+        argocd.argoproj.io/managed-by: openshift-gitops
