@@ -1,7 +1,8 @@
-tensorflow
+tensorflow[and-cuda]==2.17.0
 pandas
 numpy
 seaborn
 nltk
 scikit-learn
 wordcloud
+boto3

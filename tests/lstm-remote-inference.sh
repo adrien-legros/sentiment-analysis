@@ -1,0 +1,1 @@
+curl -X POST -d @lstm-payload.json https://lstm-edf.apps.cluster-5nb6z.5nb6z.sandbox1242.opentlc.com/v1/models/lstm:predict
