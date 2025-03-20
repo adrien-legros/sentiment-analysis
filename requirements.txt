@@ -5,4 +5,5 @@ seaborn
 nltk
 scikit-learn
 wordcloud
+gensim
 boto3
