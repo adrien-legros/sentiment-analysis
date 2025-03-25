@@ -6,9 +6,6 @@ metadata:
   namespace: sentiment-analysis-prod
   annotations:
     openshift.io/display-name: sentiment-analysis
-    serving.knative.openshift.io/enablePassthrough: "true"
-    sidecar.istio.io/inject: "true"
-    sidecar.istio.io/rewriteAppHTTPProbers: "true"
   labels:
     #networking.knative.dev/visibility: cluster-local
     opendatahub.io/dashboard: "true"
