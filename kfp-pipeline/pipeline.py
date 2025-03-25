@@ -3,6 +3,7 @@ import kfp
 
 from kfp import dsl, Client
 from kfp.dsl import Input, Output, Dataset, Model, Metrics, Artifact, ClassificationMetrics
+from kfp.kubernetes import add_toleration
 from datetime import datetime
 
 @dsl.component(
@@ -35,9 +36,7 @@ def pre_process(
     import nltk
     import re
     from nltk.stem import WordNetLemmatizer
-    from wordcloud import WordCloud
-    import matplotlib.pyplot as plt
-
+    from nltk.corpus import stopwords
 
     df = pd.read_csv(dataset.path)
     
@@ -51,8 +50,8 @@ def pre_process(
     inconsistency_tweets = df[df.apply(lambda x: x['text'] in inconsistency_tweets_unique.values, axis=1)]
     df = df.drop(inconsistency_tweets.index)
     df = df.drop_duplicates("text")
-    nltk.download('stopwords')
     nltk.download('wordnet')
+    nltk.download('stopwords')
 
     emojis = {':)': 'smile', ':-)': 'smile', ';d': 'wink', ':-E': 'vampire', ':(': 'sad', 
               ':-(': 'sad', ':-<': 'sad', ':P': 'raspberry', ':O': 'surprised',
@@ -70,7 +69,7 @@ def pre_process(
     seqReplacePattern = r"\1\1"
     
     lemmatizer = WordNetLemmatizer()
-
+    stop_words = set(stopwords.words('english'))
     def clean_tweet(tweet):
         tweet = tweet.lower()
         tweet = ' '.join([w for w in tweet.split(" ") if len(w) > 2])
@@ -95,14 +94,14 @@ def pre_process(
 def logisticregression(
         processed: Input[Dataset],
         lr: Output[Model],
+        classification_metrics: Output[ClassificationMetrics],
+        metrics: Output[Metrics],
         tag: str
 ):
-    import numpy as np
-    import matplotlib.pyplot as plt
-    import seaborn as sns
+    import pandas as pd
     from sklearn.model_selection import train_test_split
     from sklearn.linear_model import LogisticRegression
-    from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+    from sklearn.metrics import confusion_matrix, classification_report, f1_score
     from sklearn.feature_extraction.text import TfidfVectorizer
     from sklearn.pipeline import Pipeline
     
@@ -114,33 +113,16 @@ def logisticregression(
     from pickle import dump
     with open(lr.path, "wb") as f:
         dump(pipe, f, protocol=5)
-    
-    def model_Evaluate(model):
-        
-        # Predict values for Test dataset
-        y_pred = model.predict(X_test)
-    
-        # Print the evaluation metrics for the dataset.
-        print(classification_report(y_test, y_pred))
-        
-        # Compute and plot the Confusion matrix
-        cf_matrix = confusion_matrix(y_test, y_pred)
-    
-        categories  = ['Negative','Positive']
-        group_names = ['True Neg','False Pos', 'False Neg','True Pos']
-        group_percentages = ['{0:.2%}'.format(value) for value in cf_matrix.flatten() / np.sum(cf_matrix)]
-    
-        labels = [f'{v1}\n{v2}' for v1, v2 in zip(group_names,group_percentages)]
-        labels = np.asarray(labels).reshape(2,2)
-    
-        sns.heatmap(cf_matrix, annot = labels, cmap = 'Blues',fmt = '',
-                    xticklabels = categories, yticklabels = categories)
-    
-        plt.xlabel("Predicted values", fontdict = {'size':14}, labelpad = 10)
-        plt.ylabel("Actual values"   , fontdict = {'size':14}, labelpad = 10)
-        plt.title ("Confusion Matrix", fontdict = {'size':18}, pad = 20)
-    
-    model_Evaluate(pipe)
+    y_pred = pipe.predict(X_test)
+    cf_matrix = confusion_matrix(y_test, y_pred)
+    categories  = ['Negative','Positive']
+    classification_metrics.log_confusion_matrix(categories, cf_matrix.tolist())
+    f1 = f1_score(y_test, y_pred)
+    metrics.log_metric("f1_score", f1)
+    lr.metadata["model_name"] = "Logistic Regression"
+    lr.metadata["model_format"] = "pipeline"
+    lr.metadata["model_format_version"] = "1"
+    print(classification_report(y_test, y_pred))
 
 @dsl.component(
     base_image="quay.io/alegros/sentiment-runtime:latest",
@@ -149,9 +131,12 @@ def logisticregression(
 def lstm(
         processed: Input[Dataset],
         lstm: Output[Model],
+        classification_metrics: Output[ClassificationMetrics],
+        metrics: Output[Metrics],
         tag: str
 ):
     import numpy as np
+    import pandas as pd
     from tensorflow.keras.preprocessing.text import Tokenizer
     from tensorflow.keras.preprocessing.sequence import pad_sequences
     from tensorflow.keras import Sequential
@@ -159,11 +144,10 @@ def lstm(
     from tensorflow.keras.callbacks import ReduceLROnPlateau, EarlyStopping
     from sklearn.model_selection import train_test_split
     from gensim.models import Word2Vec
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    from sklearn.metrics import accuracy_score, confusion_matrix, classification_report    
+    from sklearn.metrics import confusion_matrix, classification_report, f1_score
     
     df = pd.read_csv(processed.path)
+    X_data, y_data = np.array(df['text']), np.array(df['target'])
     X_train, X_test, y_train, y_test = train_test_split(X_data, y_data,
                                                         test_size = 0.05, random_state = 0)
     
@@ -233,50 +217,82 @@ def lstm(
     )    
     acc,  val_acc  = history.history['accuracy'], history.history['val_accuracy']
     loss, val_loss = history.history['loss'], history.history['val_loss']
-    epochs = range(len(acc))
-    
-    plt.plot(epochs, acc, 'b', label='Training acc')
-    plt.plot(epochs, val_acc, 'r', label='Validation acc')
-    plt.title('Training and validation accuracy')
-    plt.legend()
-    
-    plt.figure()
-    
-    plt.plot(epochs, loss, 'b', label='Training loss')
-    plt.plot(epochs, val_loss, 'r', label='Validation loss')
-    plt.title('Training and validation loss')
-    plt.legend()
-    
-    plt.show()
-    def ConfusionMatrix(y_pred, y_test):
-        # Compute and plot the Confusion matrix
-        cf_matrix = confusion_matrix(y_test, y_pred)
-    
-        categories  = ['Negative','Positive']
-        group_names = ['True Neg','False Pos', 'False Neg','True Pos']
-        group_percentages = ['{0:.2%}'.format(value) for value in cf_matrix.flatten() / np.sum(cf_matrix)]
-    
-        labels = [f'{v1}\n{v2}' for v1, v2 in zip(group_names,group_percentages)]
-        labels = np.asarray(labels).reshape(2,2)
-    
-        sns.heatmap(cf_matrix, annot = labels, cmap = 'Blues',fmt = '',
-                    xticklabels = categories, yticklabels = categories)
-    
-        plt.xlabel("Predicted values", fontdict = {'size':14}, labelpad = 10)
-        plt.ylabel("Actual values"   , fontdict = {'size':14}, labelpad = 10)
-        plt.title ("Confusion Matrix", fontdict = {'size':18}, pad = 20)
+    # Predicting on the Test dataset.
+    y_pred = training_model.predict(X_test)
+    # Converting prediction to reflect the sentiment predicted.
+    y_pred = np.where(y_pred>=0.5, 1, 0)
+    cf_matrix = confusion_matrix(y_test, y_pred)
+    categories  = ['Negative','Positive']
+    classification_metrics.log_confusion_matrix(categories, cf_matrix.tolist())
+    f1 = f1_score(y_test, y_pred)
+    metrics.log_metric("f1_score", f1)
+    # Printing out the Evaluation metrics.
     print(classification_report(y_test, y_pred))
-    training_model.save(lstr.path)
+    training_model.export(lstm.path)
+    lstm.metadata["model_name"] = "LSTM"
+    lstm.metadata["model_format"] = "keras"
+    lstm.metadata["model_format_version"] = "2"
+
+
+@dsl.component(
+    base_image="quay.io/alegros/sentiment-runtime:latest",
+    packages_to_install=["model-registry"],
+)
+def register_model(tag: str, model: Input[Model], metrics: Input[Metrics], classification_metrics: Input[ClassificationMetrics], model_regitry_endpoint: str, user_token: str):
+    from model_registry import ModelRegistry
+    from datetime import datetime
+    # Register model
+    model_path=model.path
+    registered_model_name = model.metadata["model_name"]
+    if not tag:
+        tag=datetime.now().strftime('%y%m%d%H%M')
+    model_name="sentiment-analysis"
+    author_name="data-scientist@redhat.com"
+    registry = ModelRegistry(server_address=model_regitry_endpoint, port=443, author=author_name, is_secure=False, user_token=user_token)
+    metadata = {
+        # "metrics": metrics,
+        "license": "apache-2.0",
+        "commit": tag,
+        "classification_metrics": classification_metrics.path,
+        "metrics": metrics.path
+    }
+    registry.register_model(
+        registered_model_name,
+        model_path,
+        model_format_name=model.metadata["model_format"],
+        model_format_version=model.metadata["model_format_version"],
+        version=tag,
+        description=f"Sentiment Analysis Model version {tag}",
+        metadata=metadata
+    )
+    print("Model registered successfully")
 
 
 @dsl.pipeline(name="sentiment-analysis")
-def sentiment_pipeline(tag: str = "latest"):
+def sentiment_pipeline(model_regitry_endpoint: str, user_token: str, tag: str = "latest"):
     # Pipeline steps
     load_datasets_task = load_datasets()
     pre_process_task = pre_process(dataset=load_datasets_task.outputs["dataset"])
     processed = pre_process_task.outputs["processed"]
     logisticregression_task = logisticregression(processed=processed, tag=tag)
     lstm_task = lstm(processed=processed, tag=tag)
+    lstm_task.set_accelerator_limit("1").set_accelerator_type("nvidia.com/gpu")
+    add_toleration(
+        lstm_task,
+        key="nvidia.com/gpu",
+        operator="Exists",
+        value=None,
+        effect="NoSchedule",
+    )
+    register_lr_task = register_model(
+        tag=tag, model=logisticregression_task.outputs["lr"], metrics=logisticregression_task.outputs["metrics"],
+        classification_metrics=logisticregression_task.outputs["classification_metrics"],
+        model_regitry_endpoint=model_regitry_endpoint, user_token=user_token)
+    register_lstm_task = register_model(
+        tag=tag, model=lstm_task.outputs["lstm"], metrics=lstm_task.outputs["metrics"],
+        classification_metrics=lstm_task.outputs["classification_metrics"],
+        model_regitry_endpoint=model_regitry_endpoint, user_token=user_token)
+
 
 if __name__ == '__main__':
     host = "https://ds-pipeline-dspa.edf:8888"
@@ -284,15 +300,19 @@ if __name__ == '__main__':
                         prog='Model.py',
                         description='')
     parser.add_argument('-t', '--tag')
+    parser.add_argument('-r', '--model_regitry_endpoint')
+    parser.add_argument('--user_token')
     args = parser.parse_args()
     tag = args.tag
+    model_regitry_endpoint = args.model_regitry_endpoint
+    user_token = args.user_token
     now = str(datetime.now())
     if not tag:
         tag = now
     kfp.compiler.Compiler().compile(
         pipeline_func=sentiment_pipeline,
         package_path='sentiment-pipeline.yaml',
-        pipeline_parameters={'tag': tag},
+        pipeline_parameters={'tag': tag, 'model_regitry_endpoint': model_regitry_endpoint, 'user_token': user_token},
     )
     client = Client(host=host, verify_ssl=False)
     pipeline_name = "Sentiment Pipeline"

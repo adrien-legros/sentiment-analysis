@@ -51,8 +51,8 @@
             "ui_data": {
               "label": "process.ipynb",
               "image": "/notebook/edf/use-case/static/elyra/notebook.svg",
-              "x_pos": 129,
-              "y_pos": 304,
+              "x_pos": 50,
+              "y_pos": 107.5,
               "description": "Run notebook file"
             }
           },
@@ -129,14 +129,15 @@
               ],
               "mounted_volumes": [],
               "filename": "lstm.ipynb",
-              "gpu": 1
+              "gpu": 1,
+              "gpu_vendor": "nvidia.com/gpu"
             },
             "label": "",
             "ui_data": {
               "label": "lstm.ipynb",
               "image": "/notebook/edf/use-case/static/elyra/notebook.svg",
-              "x_pos": 403,
-              "y_pos": 401,
+              "x_pos": 290,
+              "y_pos": 50,
               "description": "Run notebook file"
             }
           },
@@ -219,8 +220,8 @@
             "ui_data": {
               "label": "logisticregression.ipynb",
               "image": "/notebook/edf/use-case/static/elyra/notebook.svg",
-              "x_pos": 405,
-              "y_pos": 221,
+              "x_pos": 290,
+              "y_pos": 163,
               "description": "Run notebook file"
             }
           },
@@ -271,15 +272,16 @@
           "name": "sentiment-analysis",
           "runtime": "Data Science Pipelines",
           "pipeline_defaults": {
-            "mounted_volumes": [],
             "kubernetes_tolerations": [],
             "kubernetes_pod_annotations": [],
             "kubernetes_shared_mem_size": {},
             "kubernetes_pod_labels": [],
+            "mounted_volumes": [],
             "kubernetes_secrets": [],
             "env_vars": [],
             "runtime_image": "quay.io/alegros/sentiment-runtime:latest"
-          }
+          },
+          "pipeline_parameters": []
         }
       },
       "runtime_ref": ""
