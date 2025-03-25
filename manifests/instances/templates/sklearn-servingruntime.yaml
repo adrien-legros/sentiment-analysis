@@ -6,8 +6,12 @@ metadata:
   namespace: sentiment-analysis-prod
 spec:
   annotations:
-    prometheus.kserve.io/port: '8080'
-    prometheus.kserve.io/path: "/metrics"
+    prometheus.io/path: /metrics
+    prometheus.io/port: '8080'
+    prometheus.io/scrape: 'true'
+    serving.knative.openshift.io/enablePassthrough: 'true'
+    sidecar.istio.io/inject: 'true'
+    sidecar.istio.io/rewriteAppHTTPProbers: 'true'
   supportedModelFormats:
     - name: sklearn
       version: "1"
